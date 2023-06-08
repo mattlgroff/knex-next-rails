@@ -28,7 +28,7 @@ const {
   readFile,
   writeFile,
 } = require('../lib/migrations/util/fs');
-
+const url = require('url');
 const { listMigrations } = require('./utils/migrationsLister');
 
 async function openKnexfile(configPath) {
@@ -82,6 +82,24 @@ async function initKnex(env, opts, useDefaultClientIfNotSpecified) {
 
   const knex = require(env.modulePath);
   return knex(config);
+}
+
+async function getDatabaseName(env, opts) {
+  const config = await initKnex(env, opts);
+  const resolvedConfig = config.client.config;
+  if (
+    resolvedConfig.connection &&
+    typeof resolvedConfig.connection === 'string'
+  ) {
+    return url.parse(resolvedConfig.connection).pathname.substr(1);
+  }
+
+  if (
+    resolvedConfig.connection &&
+    typeof resolvedConfig.connection === 'object'
+  ) {
+    return resolvedConfig.connection.database;
+  }
 }
 
 function invoke() {
@@ -427,6 +445,40 @@ function invoke() {
           success(
             color.green(`Ran ${log.length} seed files`) +
               (argv.verbose ? `\n${color.cyan(log.join('\n'))}` : '')
+          );
+        })
+        .catch(exit);
+    });
+
+  commander
+    .command('db:drop')
+    .description('Drops the database specified in the configuration file')
+    .action(async () => {
+      const databaseName = await getDatabaseName(env, commander.opts());
+      initKnex(env, commander.opts())
+        .then((instance) => {
+          return instance.raw(`DROP DATABASE IF EXISTS ${databaseName};`);
+        })
+        .then(() => {
+          success(
+            color.green(`Database ${databaseName} dropped successfully.`)
+          );
+        })
+        .catch(exit);
+    });
+
+  commander
+    .command('db:create')
+    .description('Creates the database specified in the configuration file')
+    .action(async () => {
+      const databaseName = await getDatabaseName(env, commander.opts());
+      initKnex(env, commander.opts())
+        .then((instance) => {
+          return instance.raw(`CREATE DATABASE ${databaseName};`); // PostgreSQL doesn't support IF NOT EXISTS in CREATE DATABASE
+        })
+        .then(() => {
+          success(
+            color.green(`Database ${databaseName} created successfully.`)
           );
         })
         .catch(exit);

@@ -1,7 +1,7 @@
 {
-  "name": "knex",
-  "version": "2.4.2",
-  "description": "A batteries-included SQL query & schema builder for PostgresSQL, MySQL, CockroachDB, MSSQL and SQLite3",
+  "name": "knex-next-rails",
+  "version": "1.0.0",
+  "description": "Forked from knex: A batteries-included SQL query & schema builder for PostgresSQL, MySQL, CockroachDB, MSSQL and SQLite3",
   "main": "knex",
   "types": "types/index.d.ts",
   "engines": {
@@ -154,7 +154,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/knex/knex.git"
+    "url": "git@github.com:mattlgroff/knex-next-rails.git"
   },
   "homepage": "https://knex.github.io/documentation/",
   "keywords": [

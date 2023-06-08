@@ -1,3 +1,9 @@
+# Knex Next Rails (forked from Knex)
+
+Added 2 commands:
+- `knex db:drop` - drops the database (postgres only)
+- `knex db:create` - creates the database (postgres only)
+
 # [knex.js](https://knex.github.io/documentation/)
 
 [![npm version](http://img.shields.io/npm/v/knex.svg)](https://npmjs.org/package/knex)
