@@ -455,14 +455,23 @@ function invoke() {
     .description('Drops the database specified in the configuration file')
     .action(async () => {
       const databaseName = await getDatabaseName(env, commander.opts());
-      initKnex(env, commander.opts())
-        .then((instance) => {
-          return instance.raw(`DROP DATABASE IF EXISTS "${databaseName}";`);
-        })
+      const config = await initKnex(env, commander.opts());
+      const newConfig = {
+        ...config.client.config,
+        connection: { ...config.client.config.connection, database: 'temp_db' },
+      };
+      const instance = require('knex')(newConfig);
+      instance
+        .raw(
+          `CREATE DATABASE temp_db; DROP DATABASE IF EXISTS "${databaseName}";`
+        )
         .then(() => {
           success(
             color.green(`Database "${databaseName}" dropped successfully.`)
           );
+          return instance
+            .raw('DROP DATABASE temp_db;')
+            .finally(() => instance.destroy());
         })
         .catch(exit);
     });
@@ -472,14 +481,21 @@ function invoke() {
     .description('Creates the database specified in the configuration file')
     .action(async () => {
       const databaseName = await getDatabaseName(env, commander.opts());
-      initKnex(env, commander.opts())
-        .then((instance) => {
-          return instance.raw(`CREATE DATABASE "${databaseName}";`);
-        })
+      const config = await initKnex(env, commander.opts());
+      const newConfig = {
+        ...config.client.config,
+        connection: { ...config.client.config.connection, database: 'temp_db' },
+      };
+      const instance = require('knex')(newConfig);
+      instance
+        .raw(`CREATE DATABASE temp_db; CREATE DATABASE "${databaseName}";`)
         .then(() => {
           success(
             color.green(`Database "${databaseName}" created successfully.`)
           );
+          return instance
+            .raw('DROP DATABASE temp_db;')
+            .finally(() => instance.destroy());
         })
         .catch(exit);
     });
