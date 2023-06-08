@@ -460,8 +460,10 @@ function invoke() {
             "SELECT tablename FROM pg_tables WHERE schemaname='public';"
           );
 
-          for (let row of tableNames.rows) {
-            await instance.schema.dropTableIfExists(row.tablename);
+          for (const row of tableNames.rows) {
+            await instance.schema.raw(
+              `DROP TABLE IF EXISTS "${row.tablename}" CASCADE`
+            );
           }
         })
         .then(() => {
