@@ -28,7 +28,6 @@ const {
   readFile,
   writeFile,
 } = require('../lib/migrations/util/fs');
-const url = require('url');
 const { listMigrations } = require('./utils/migrationsLister');
 
 async function openKnexfile(configPath) {
@@ -82,24 +81,6 @@ async function initKnex(env, opts, useDefaultClientIfNotSpecified) {
 
   const knex = require(env.modulePath);
   return knex(config);
-}
-
-async function getDatabaseName(env, opts) {
-  const config = await initKnex(env, opts);
-  const resolvedConfig = config.client.config;
-  if (
-    resolvedConfig.connection &&
-    typeof resolvedConfig.connection === 'string'
-  ) {
-    return url.parse(resolvedConfig.connection).pathname.substr(1);
-  }
-
-  if (
-    resolvedConfig.connection &&
-    typeof resolvedConfig.connection === 'object'
-  ) {
-    return resolvedConfig.connection.database;
-  }
 }
 
 function invoke() {
