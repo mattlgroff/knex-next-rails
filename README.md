@@ -1,8 +1,7 @@
 # Knex Next Rails (forked from Knex)
 
-Added 2 commands:
-- `knex db:drop` - drops the database (postgres only)
-- `knex db:create` - creates the database (postgres only)
+Added 1 command:
+- `knex db:drop_tables` - drops all of the tables in the database (postgres only)
 
 # [knex.js](https://knex.github.io/documentation/)
 
