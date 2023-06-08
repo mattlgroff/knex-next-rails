@@ -460,7 +460,7 @@ function invoke() {
         ...config.client.config,
         connection: { ...config.client.config.connection, database: 'temp_db' },
       };
-      const instance = require('knex')(newConfig);
+      const instance = await initKnex(newConfig, commander.opts());
       instance
         .raw(
           `CREATE DATABASE temp_db; DROP DATABASE IF EXISTS "${databaseName}";`
@@ -486,7 +486,7 @@ function invoke() {
         ...config.client.config,
         connection: { ...config.client.config.connection, database: 'temp_db' },
       };
-      const instance = require('knex')(newConfig);
+      const instance = await initKnex(newConfig, commander.opts());
       instance
         .raw(`CREATE DATABASE temp_db; CREATE DATABASE "${databaseName}";`)
         .then(() => {
