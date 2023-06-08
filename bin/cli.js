@@ -457,11 +457,11 @@ function invoke() {
       const databaseName = await getDatabaseName(env, commander.opts());
       initKnex(env, commander.opts())
         .then((instance) => {
-          return instance.raw(`DROP DATABASE IF EXISTS ${databaseName};`);
+          return instance.raw(`DROP DATABASE IF EXISTS "${databaseName}";`);
         })
         .then(() => {
           success(
-            color.green(`Database ${databaseName} dropped successfully.`)
+            color.green(`Database "${databaseName}" dropped successfully.`)
           );
         })
         .catch(exit);
@@ -474,11 +474,11 @@ function invoke() {
       const databaseName = await getDatabaseName(env, commander.opts());
       initKnex(env, commander.opts())
         .then((instance) => {
-          return instance.raw(`CREATE DATABASE ${databaseName};`); // PostgreSQL doesn't support IF NOT EXISTS in CREATE DATABASE
+          return instance.raw(`CREATE DATABASE "${databaseName}";`);
         })
         .then(() => {
           success(
-            color.green(`Database ${databaseName} created successfully.`)
+            color.green(`Database "${databaseName}" created successfully.`)
           );
         })
         .catch(exit);
