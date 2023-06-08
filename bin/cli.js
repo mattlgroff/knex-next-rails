@@ -24,6 +24,7 @@ const {
   findUpConfig,
 } = require('./utils/cli-config-utils');
 const {
+  ensureDirectoryExists,
   existsSync,
   readFile,
   writeFile,
@@ -449,6 +450,123 @@ function invoke() {
         })
         .then(() => {
           success(color.green(`All tables dropped successfully.`));
+        })
+        .catch(exit);
+    });
+
+  commander
+    .command('db:schema_dump')
+    .description('Dump the database schema')
+    .action(() => {
+      initKnex(env, commander.opts())
+        .then(async (instance) => {
+          const result = await instance.raw(`
+            SELECT
+                c.table_name,
+                c.column_name,
+                c.data_type,
+                c.is_nullable,
+                c.column_default,
+                pk.constraint_type AS primary_key,
+                fk.table_name AS foreign_key_table,
+                fk.column_name AS foreign_key_column,
+                idx.indisunique AS unique_index
+            FROM
+                information_schema.columns c
+            LEFT JOIN
+                information_schema.key_column_usage kcu
+                ON c.table_name = kcu.table_name AND c.column_name = kcu.column_name
+            LEFT JOIN
+                information_schema.table_constraints pk
+                ON pk.constraint_name = kcu.constraint_name AND pk.constraint_type = 'PRIMARY KEY'
+            LEFT JOIN
+                (
+                    SELECT
+                        kcu.table_name,
+                        kcu.column_name,
+                        ccu.table_name AS foreign_table_name,
+                        ccu.column_name AS foreign_column_name
+                    FROM
+                        information_schema.key_column_usage kcu
+                    JOIN
+                        information_schema.referential_constraints rc
+                        ON rc.constraint_name = kcu.constraint_name
+                    JOIN
+                        information_schema.constraint_column_usage ccu
+                        ON ccu.constraint_name = rc.unique_constraint_name
+                ) fk ON c.table_name = fk.table_name AND c.column_name = fk.column_name
+            LEFT JOIN
+                (
+                    SELECT
+                        i.relname AS index_name,
+                        a.attname AS column_name,
+                        ix.indrelid::regclass::text AS table_name,
+                        ix.indisunique
+                    FROM
+                        pg_class t,
+                        pg_class i,
+                        pg_index ix,
+                        pg_attribute a
+                    WHERE
+                        t.oid = ix.indrelid
+                        AND i.oid = ix.indexrelid
+                        AND a.attrelid = t.oid
+                        AND a.attnum = ANY(ix.indkey)
+                        AND t.relkind = 'r'
+                ) idx ON c.table_name::text = idx.table_name AND c.column_name = idx.column_name            
+            WHERE
+                c.table_schema = 'public'
+            ORDER BY
+                c.table_name,
+                c.ordinal_position;
+          `);
+
+          const schema = {};
+          result.rows.forEach((row) => {
+            // Skip over rows where table_name is 'knex_migrations' or 'knex_migrations_lock'
+            if (
+              ['knex_migrations', 'knex_migrations_lock'].includes(
+                row.table_name
+              )
+            ) {
+              return;
+            }
+
+            if (!schema[row.table_name]) {
+              schema[row.table_name] = {};
+            }
+            schema[row.table_name][row.column_name] = {
+              data_type: row.data_type,
+              is_nullable: row.is_nullable,
+              column_default: row.column_default,
+              primary_key: row.primary_key ? true : false,
+              foreign_key: row.foreign_key_table
+                ? {
+                    table: row.foreign_key_table,
+                    column: row.foreign_key_column,
+                  }
+                : null,
+              unique_index: row.unique_index ? true : false,
+            };
+          });
+
+          // Write the schema to a file in the directory above migrations.
+          const migrationsDir = env.configuration.migrations.directory;
+          const schemaFileDir = path.join(migrationsDir, '..');
+          const schemaFilePath = path.join(schemaFileDir, 'schema.json');
+
+          // Ensure the directory for the schema file exists
+          await ensureDirectoryExists(schemaFileDir);
+
+          // Write schema to schema.json
+          return writeFile(
+            schemaFilePath,
+            JSON.stringify(schema, null, 2),
+            'utf8'
+          );
+        })
+        .then(() => {
+          success(color.green(`Dumped schema successfully.`));
         })
         .catch(exit);
     });

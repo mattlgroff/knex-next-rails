@@ -2,6 +2,7 @@
 
 Added 1 command:
 - `knex db:drop_tables` - drops all of the tables in the database (postgres only)
+- `knex db:schema_dump` - dumps the schema of the database to a file (postgres only)
 
 # [knex.js](https://knex.github.io/documentation/)
 
