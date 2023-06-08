@@ -451,51 +451,21 @@ function invoke() {
     });
 
   commander
-    .command('db:drop')
-    .description('Drops the database specified in the configuration file')
-    .action(async () => {
-      const databaseName = await getDatabaseName(env, commander.opts());
-      const config = await initKnex(env, commander.opts());
-      const newConfig = {
-        ...config.client.config,
-        connection: { ...config.client.config.connection, database: 'temp_db' },
-      };
-      const instance = await initKnex(newConfig, commander.opts());
-      instance
-        .raw(
-          `CREATE DATABASE temp_db; DROP DATABASE IF EXISTS "${databaseName}";`
-        )
-        .then(() => {
-          success(
-            color.green(`Database "${databaseName}" dropped successfully.`)
+    .command('db:drop_tables')
+    .description('Drop all tables in the database')
+    .action(() => {
+      initKnex(env, commander.opts())
+        .then(async (instance) => {
+          const tableNames = await instance.raw(
+            "SELECT tablename FROM pg_tables WHERE schemaname='public';"
           );
-          return instance
-            .raw('DROP DATABASE temp_db;')
-            .finally(() => instance.destroy());
-        })
-        .catch(exit);
-    });
 
-  commander
-    .command('db:create')
-    .description('Creates the database specified in the configuration file')
-    .action(async () => {
-      const databaseName = await getDatabaseName(env, commander.opts());
-      const config = await initKnex(env, commander.opts());
-      const newConfig = {
-        ...config.client.config,
-        connection: { ...config.client.config.connection, database: 'temp_db' },
-      };
-      const instance = await initKnex(newConfig, commander.opts());
-      instance
-        .raw(`CREATE DATABASE temp_db; CREATE DATABASE "${databaseName}";`)
+          for (let row of tableNames.rows) {
+            await instance.schema.dropTableIfExists(row.tablename);
+          }
+        })
         .then(() => {
-          success(
-            color.green(`Database "${databaseName}" created successfully.`)
-          );
-          return instance
-            .raw('DROP DATABASE temp_db;')
-            .finally(() => instance.destroy());
+          success(color.green(`All tables dropped successfully.`));
         })
         .catch(exit);
     });
